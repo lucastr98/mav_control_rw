@@ -1,0 +1,18 @@
+#Firefly parameters
+inertia: [ 0.19225 , 0.000000 , 0.000000 , 0.000000 , 0.18493 , 0.000000 , 0.000000 , 0.000000 , 0.34422]
+allocation_matrix: [ 0.500000 , -0.866025 , -1.000000 , 1.000000 , 1.000000 , 0.000000 , 1.000000 , 1.000000 , 0.500000 , 0.866025 , -1.000000 , 1.000000 , -0.500000 , 0.866025 , 1.000000 , 1.000000 , -1.000000 , 0.000000 , -1.000000 , 1.000000 , -0.500000 , -0.866025 , 1.000000 , 1.000000]
+n_rotors: 6
+
+rotor_force_constant: 4.0879e-5
+rotor_moment_constant: 0.0247
+arm_length: 0.42
+
+#tweak these:
+roll_gain: 28
+pitch_gain: 28
+roll_int_gain: 0.75
+pitch_int_gain: 0.75
+p_gain: 15
+q_gain: 15
+r_gain: 4.3
+max_integrator_error: 0.5
