@@ -21,18 +21,18 @@ linear_drag_coefficients: [0.01, 0.01, 0]
 # dynamic config default values:
 q_x : 8
 q_y : 8
-q_z : 12
+q_z : 150
 
 q_vx : 3
 q_vy : 3
-q_vz : 10
+q_vz : 30
 
 q_roll : 30
 q_pitch: 30
 
-r_roll  : 40
-r_pitch : 40
-r_thrust : 10
+r_roll  : 500
+r_pitch : 500
+r_thrust : 2
 
 roll_max: deg(25.0)
 pitch_max: deg(25.0)
@@ -42,7 +42,7 @@ thrust_max: 20
 K_yaw: 1.8
 
 Ki_xy: 0.1
-Ki_z: 0.3
+Ki_z: 1
 position_error_integration_limit: 2
 antiwindup_ball: 0.4
 
