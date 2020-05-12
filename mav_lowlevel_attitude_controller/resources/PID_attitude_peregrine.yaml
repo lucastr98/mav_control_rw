@@ -15,4 +15,4 @@ pitch_int_gain: 0.75
 p_gain: 15
 q_gain: 15
 r_gain: 4.3
-max_integrator_error: 0.5
+max_integrator_error: 30
