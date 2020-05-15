@@ -42,7 +42,7 @@ StateMachineDefinition::StateMachineDefinition(const ros::NodeHandle& nh, const 
   private_nh_.param<bool>("use_rc_teleop", use_rc_teleop_, true);
   private_nh_.param<std::string>("reference_frame", reference_frame_id_, "odom");
   predicted_state_publisher_ = nh_.advertise<visualization_msgs::Marker>( "predicted_state", 0 );
-  full_predicted_state_publisher_ = 
+  full_predicted_state_publisher_ =
     nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>( "full_predicted_state", 1 );
 }
 
@@ -125,7 +125,7 @@ void StateMachineDefinition::PublishPredictedState()
         marker_queue.points.push_back(p);
       }
     }
-
+    marker_queue.header.stamp = ros::Time::now();
     predicted_state_publisher_.publish(marker_queue);
   }
 
