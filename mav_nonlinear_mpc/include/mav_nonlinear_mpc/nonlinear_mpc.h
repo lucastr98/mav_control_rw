@@ -35,6 +35,7 @@
 #include <Eigen/Eigen>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/eigen_mav_msgs.h>
+#include <geometry_msgs/PointStamped.h>
 #include <stdio.h>
 #include <mav_control_interface/mpc_queue.h>
 #include "acado_common.h"
@@ -122,6 +123,10 @@ class NonlinearModelPredictiveControl
     return mass_;
   }
 
+    //get target position and velocity
+  void initializeSubscribers(ros::NodeHandle& nh);
+  void targetCallback(const geometry_msgs::PointStamped& intersection_point);
+
   // get reference and predicted state
   bool getCurrentReference(mav_msgs::EigenTrajectoryPoint* reference) const;
   bool getCurrentReference(mav_msgs::EigenTrajectoryPointDeque* reference) const;
@@ -144,6 +149,7 @@ class NonlinearModelPredictiveControl
 
   // ros node handles
   ros::NodeHandle nh_, private_nh_;
+  ros::Subscriber target_sub_;
 
   // reset integrator service
   ros::ServiceServer reset_integrator_service_server_;
@@ -171,10 +177,12 @@ class NonlinearModelPredictiveControl
   Eigen::Vector3d q_position_;
   Eigen::Vector3d q_velocity_;
   Eigen::Vector2d q_attitude_;
-  Eigen::VectorXd w_impact_location_; //1d
 
   // control penalty
   Eigen::Vector3d r_command_;
+
+  //imact penalty
+  Eigen::VectorXd w_impact_location_; //1d
 
   // yaw P gain
   double K_yaw_;
@@ -193,6 +201,10 @@ class NonlinearModelPredictiveControl
   double yaw_rate_limit_;
   double thrust_min_;
   double thrust_max_;
+
+  //Target Position / velocity
+  Eigen::Vector3d target_position_;
+  Eigen::Vector3d target_velocity_;
 
   // reference queue
   MPCQueue mpc_queue_;

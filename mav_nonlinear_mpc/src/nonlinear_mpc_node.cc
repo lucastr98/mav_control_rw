@@ -72,6 +72,7 @@ void NonLinearModelPredictiveControllerNode::ControllerDynConfigCallback(
   Eigen::Vector3d q_position;
   Eigen::Vector3d q_velocity;
   Eigen::Vector2d q_attitude;
+  Eigen::VectorXd w_impact_location(1);
 
   Eigen::Vector3d r_command;
   Eigen::VectorXd control_limits(5);
@@ -81,6 +82,7 @@ void NonLinearModelPredictiveControllerNode::ControllerDynConfigCallback(
   q_attitude << config.q_roll, config.q_pitch;
 
   r_command << config.r_roll, config.r_pitch, config.r_thrust;
+  w_impact_location << config.w_impact_location;
 
   control_limits << config.roll_max, config.pitch_max, config.yaw_rate_max, config.thrust_min, config
       .thrust_max;
@@ -89,6 +91,7 @@ void NonLinearModelPredictiveControllerNode::ControllerDynConfigCallback(
   nonlinear_mpc_.setVelocityPenality(q_velocity);
   nonlinear_mpc_.setAttitudePenality(q_attitude);
   nonlinear_mpc_.setCommandPenality(r_command);
+  nonlinear_mpc_.setImpactLocationPenality(w_impact_location);
   nonlinear_mpc_.setYawGain(config.K_yaw);
   nonlinear_mpc_.setControlLimits(control_limits);
 

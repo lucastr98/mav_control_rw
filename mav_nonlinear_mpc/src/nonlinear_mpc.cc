@@ -61,11 +61,15 @@ NonlinearModelPredictiveControl::NonlinearModelPredictiveControl(const ros::Node
   reference_.setZero();
   referenceN_.setZero();
 
+  target_position_.setZero();
+  target_velocity_.setZero();
+
+
   reset_integrator_service_server_ = nh_.advertiseService(
       "reset_integrator", &NonlinearModelPredictiveControl::resetIntegratorServiceCallback, this);
 
   initializeParameters();
-
+  initializeSubscribers(nh_);
   mpc_queue_.initializeQueue(sampling_time_, prediction_sampling_time_);
 
 }
@@ -80,6 +84,16 @@ bool NonlinearModelPredictiveControl::resetIntegratorServiceCallback(std_srvs::E
 {
   position_error_integration_.setZero();
   return true;
+}
+
+void NonlinearModelPredictiveControl::initializeSubscribers(ros::NodeHandle& nh) {
+  target_sub_ = nh.subscribe("/visualizationi/intersection_point", 5, &NonlinearModelPredictiveControl::targetCallback, this);
+}
+
+void NonlinearModelPredictiveControl::targetCallback(const geometry_msgs::PointStamped& intersection_point){
+   target_position_[0] = intersection_point.point.x;
+   target_position_[1] = intersection_point.point.y;
+   target_position_[2] = intersection_point.point.z;
 }
 
 void NonlinearModelPredictiveControl::initializeParameters()
@@ -170,6 +184,7 @@ void NonlinearModelPredictiveControl::applyParameters()
   W_.block(3, 3, 3, 3) = q_velocity_.asDiagonal();
   W_.block(6, 6, 2, 2) = q_attitude_.asDiagonal();
   W_.block(8, 8, 3, 3) = r_command_.asDiagonal();
+  W_.block(11, 11, 1, 1) = w_impact_location_.asDiagonal();
 
   WN_ = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
                   r_command_.asDiagonal());
@@ -192,6 +207,7 @@ void NonlinearModelPredictiveControl::applyParameters()
     std::cout << "q_position_: " << q_position_.transpose() << std::endl;
     std::cout << "q_velocity_: " << q_velocity_.transpose() << std::endl;
     std::cout << "r_command_: " << r_command_.transpose() << std::endl;
+    std::cout << "w_impact_location_: " << w_impact_location_.transpose() << std::endl;
     std::cout << "W_N = \n" << WN_ << std::endl;
   }
 }
@@ -349,7 +365,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
         ((acceleration_ref_B(0) - estimated_disturbances_B(0)) / kGravity));
     reference_.block(i, 0, 1, ACADO_NY) << position_ref_[i].transpose(), velocity_ref_[i].transpose(), feed_forward
         .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2), 0;
-    acado_online_data_.block(i, ACADO_NOD - 3, 1, 3) << estimated_disturbances.transpose();
+    acado_online_data_.block(i, 6, 1, 3) << estimated_disturbances.transpose();
+    acado_online_data_.block(i, 9, 1, 3) << target_position_.transpose();
+    acado_online_data_.block(i, 12, 1, 3) << target_velocity_.transpose();
   }
   referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
   acado_online_data_.block(ACADO_N, 6, 1, 3) << estimated_disturbances.transpose();
@@ -533,7 +551,7 @@ bool NonlinearModelPredictiveControl::getPredictedState(
     pnt.orientation_W_B.y() = tf_orientation.y();
     pnt.orientation_W_B.z() = tf_orientation.z();
     pnt.orientation_W_B.w() = tf_orientation.w();
-                
+
     pnt.time_from_start_ns = static_cast<int64_t>(i) *
                            static_cast<int64_t>(sampling_time_ * 1000000000.0);
     pnt.timestamp_ns = odometry_.timestamp_ns + pnt.time_from_start_ns;
