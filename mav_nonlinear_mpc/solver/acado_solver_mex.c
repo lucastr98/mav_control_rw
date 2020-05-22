@@ -235,10 +235,12 @@ void mexFunction(	int nlhs,
 	
 	const char *infoNames[ 5 ] = {"status", "cpuTime", "kktValue", "objValue", "nIterations"};
 	mxArray* info;
-	double status, cpuTime, kktValue, objValue;
+	real_t status, cpuTime, kktValue, objValue;
 	double tmp[ 1 ];
 	mxArray* shPtr;
+#ifndef _DSPACE
 	acado_timer tmr;
+#endif
 	double nIterations = 0;
 	
 	const char *outNames[ NOO_4 ];
@@ -357,6 +359,15 @@ void mexFunction(	int nlhs,
 	getArray(1, src, 0, "lbAValues", acadoVariables.lbAValues, ACADO_QP_NCA, 1);
 	getArray(1, src, 0, "ubAValues", acadoVariables.ubAValues, ACADO_QP_NCA, 1);
 	#endif
+#elif (ACADO_HARDCODED_CONSTRAINT_VALUES == 0) && (ACADO_QP_SOLVER == ACADO_GENERIC)
+	/* Bounds */
+	getArray(1, src, 0, "lbValues", acadoVariables.lbValues, ACADO_N*(ACADO_NX+ACADO_NU), 1);
+	getArray(1, src, 0, "ubValues", acadoVariables.ubValues, ACADO_N*(ACADO_NX+ACADO_NU), 1);
+	#if (ACADO_NPAC > 0)
+	/* Affine bounds */
+	getArray(1, src, 0, "lbAValues", acadoVariables.lbAValues, ACADO_N*ACADO_NPAC, 1);
+	getArray(1, src, 0, "ubAValues", acadoVariables.ubAValues, ACADO_N*ACADO_NPAC, 1);
+	#endif
 #endif
 
 #if ACADO_USE_ARRIVAL_COST == 1
@@ -385,7 +396,9 @@ void mexFunction(	int nlhs,
 	else
 		strategy = 0;
 		
+#ifndef _DSPACE
 	acado_tic( &tmr );
+#endif
 	
 	/* Call solver */
 	switch ( ctrl )
@@ -424,7 +437,7 @@ void mexFunction(	int nlhs,
 			
 			acado_preparationStep();
 			
-			status = (double)acado_feedbackStep();
+			status = (real_t)acado_feedbackStep();
 			
 			kktValue = acado_getKKT();
 			objValue = acado_getObjective();
@@ -469,7 +482,7 @@ void mexFunction(	int nlhs,
 		case 3:
 			/* Feedback step */
 			
-			status = (double)acado_feedbackStep();
+			status = (real_t)acado_feedbackStep();
 			
 			kktValue = acado_getKKT();
 			objValue = acado_getObjective();
@@ -499,7 +512,9 @@ void mexFunction(	int nlhs,
 			mexErrMsgTxt("Unknown control code.");
 	}
 	
-	cpuTime = acado_toc( &tmr );
+#ifndef _DSPACE
+	cpuTime = (real_t)acado_toc( &tmr );
+#endif
 	
 	/* Prepare return argument */
 	

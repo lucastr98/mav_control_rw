@@ -30,8 +30,8 @@ real_t auxVar[ 62 ];
 
 real_t rk_ttt;
 
-/** Row vector of size: 21 */
-real_t rk_xxx[ 21 ];
+/** Row vector of size: 27 */
+real_t rk_xxx[ 27 ];
 
 /** Column vector of size: 9 */
 real_t rk_kkk[ 9 ];
@@ -511,6 +511,12 @@ rk_xxx[17] = rk_eta[125];
 rk_xxx[18] = rk_eta[126];
 rk_xxx[19] = rk_eta[127];
 rk_xxx[20] = rk_eta[128];
+rk_xxx[21] = rk_eta[129];
+rk_xxx[22] = rk_eta[130];
+rk_xxx[23] = rk_eta[131];
+rk_xxx[24] = rk_eta[132];
+rk_xxx[25] = rk_eta[133];
+rk_xxx[26] = rk_eta[134];
 
 for (run = 0; run < 1; ++run)
 {

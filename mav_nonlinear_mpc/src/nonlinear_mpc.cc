@@ -150,7 +150,7 @@ void NonlinearModelPredictiveControl::initializeParameters()
 
   for (int i = 0; i < ACADO_N + 1; i++) {
     acado_online_data_.block(i, 0, 1, ACADO_NOD) << roll_time_constant_, roll_gain_, pitch_time_constant_, pitch_gain_, drag_coefficients_(
-        0), drag_coefficients_(1), 0, 0, 0;
+        0), drag_coefficients_(1), 0, 0, 0, 0, 0, 0, 0, 0, 0;
   }
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NOD, ACADO_N + 1>>(const_cast<double*>(acadoVariables.od)) =
@@ -348,11 +348,11 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
         (-(acceleration_ref_B(1) - estimated_disturbances_B(1)) / kGravity),
         ((acceleration_ref_B(0) - estimated_disturbances_B(0)) / kGravity));
     reference_.block(i, 0, 1, ACADO_NY) << position_ref_[i].transpose(), velocity_ref_[i].transpose(), feed_forward
-        .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2);
+        .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2), 0;
     acado_online_data_.block(i, ACADO_NOD - 3, 1, 3) << estimated_disturbances.transpose();
   }
   referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
-  acado_online_data_.block(ACADO_N, ACADO_NOD - 3, 1, 3) << estimated_disturbances.transpose();
+  acado_online_data_.block(ACADO_N, 6, 1, 3) << estimated_disturbances.transpose();
 
   x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W;
 

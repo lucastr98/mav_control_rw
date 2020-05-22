@@ -76,6 +76,10 @@ class NonlinearModelPredictiveControl
   {
     r_command_ = r_command;
   }
+  void setImpactLocationPenality(const Eigen::VectorXd& w_impact_location)
+  {
+    w_impact_location_ = w_impact_location;
+  }
   void setYawGain(double K_yaw)
   {
     K_yaw_ = K_yaw;
@@ -167,6 +171,7 @@ class NonlinearModelPredictiveControl
   Eigen::Vector3d q_position_;
   Eigen::Vector3d q_velocity_;
   Eigen::Vector2d q_attitude_;
+  Eigen::VectorXd w_impact_location_; //1d
 
   // control penalty
   Eigen::Vector3d r_command_;

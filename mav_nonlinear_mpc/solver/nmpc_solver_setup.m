@@ -15,10 +15,14 @@ OnlineData pitch_gain;
 OnlineData linear_drag_coefficient(2);
 OnlineData external_forces(3);
 
+OnlineData target_position(3);
+OnlineData target_velocity(3);
+
 n_XD = length(diffStates);
 n_U = length(controls);
 
 g = [0;0;9.8066];
+e = 2.718;
 
 %% Differential Equation
 
@@ -27,6 +31,8 @@ R = [cos(yaw)*cos(pitch)  cos(yaw)*sin(pitch)*sin(roll)-cos(roll)*sin(yaw)  (cos
     -sin(pitch)                            cos(pitch)*sin(roll)                            cos(pitch)*cos(roll)];
 
 z_B = R(:,3);
+
+h_impact_location = 0;
 
 %nonlinear drag model
 drag_acc = thrust*[linear_drag_coefficient1 0 0; 0 linear_drag_coefficient2 0; 0 0 0]*R'*velocity;
@@ -49,7 +55,8 @@ h = [position;...
     pitch;...
     roll_ref;...
     pitch_ref;...
-    z_B(3)*thrust-g(3)];
+    z_B(3)*thrust-g(3);...
+    h_impact_location];
 
 hN = [position;...
     velocity];
