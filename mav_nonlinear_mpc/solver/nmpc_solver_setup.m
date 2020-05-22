@@ -31,9 +31,14 @@ R = [cos(yaw)*cos(pitch)  cos(yaw)*sin(pitch)*sin(roll)-cos(roll)*sin(yaw)  (cos
     -sin(pitch)                            cos(pitch)*sin(roll)                            cos(pitch)*cos(roll)];
 
 z_B = R(:,3);
+    
+d_impact = (position-target_position)' * z_B;
 
-h_impact_location = 0;
+r_impact = sqrt((norm(position-target_position))^2 - d_impact^2);
 
+h_impact_location = 3.2*r_impact^4 +1/((1+e^(-r_impact/0.02-8.1))^2);
+    
+    
 %nonlinear drag model
 drag_acc = thrust*[linear_drag_coefficient1 0 0; 0 linear_drag_coefficient2 0; 0 0 0]*R'*velocity;
 
