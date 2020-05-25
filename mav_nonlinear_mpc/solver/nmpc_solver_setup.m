@@ -36,8 +36,9 @@ d_impact = (position-target_position)' * z_B;
 
 r_impact = sqrt((norm(position-target_position))^2 - d_impact^2);
 
-h_impact_location = 3.2*r_impact^4 +1/((1+e^(-r_impact/0.02-8.1))^2);
-    
+h_impact_location = 3.2*r_impact^6 + 1/((1+e^(-r_impact/0.02-8.1))^2);
+%h_impact_location = h_impact_location / (1 + e^(-2.1*d_impact-5));  
+%h_impact_location = h_impact_location / (1 + e^(-10 * target_position3));
     
 %nonlinear drag model
 drag_acc = thrust*[linear_drag_coefficient1 0 0; 0 linear_drag_coefficient2 0; 0 0 0]*R'*velocity;
