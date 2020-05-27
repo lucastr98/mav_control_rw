@@ -388,6 +388,12 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
   int acado_status = acado_feedbackStep();
 
+
+  Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
+  // std::stringstream ss;
+  // ss << ;
+  // ROS_WARN_STREAM(ss.str());
+
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 
   double roll_ref = acadoVariables.u[0];

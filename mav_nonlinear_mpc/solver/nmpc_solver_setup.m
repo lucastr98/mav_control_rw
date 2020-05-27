@@ -34,9 +34,9 @@ z_B = R(:,3);
     
 d_impact = (position-target_position)' * z_B;
 
-r_impact = sqrt((norm(position-target_position))^2 - d_impact^2);
+r_impact = (norm(position-target_position))^2 - d_impact^2;
 
-h_impact_location = 3.2*r_impact^6 + 1/((1+e^(-r_impact/0.02-8.1))^2);
+h_impact_location = 3.2* r_impact^3 + 1/(1+e^(-r_impact/0.009-5.1));
 %h_impact_location = h_impact_location / (1 + e^(-2.1*d_impact-5));  
 %h_impact_location = h_impact_location / (1 + e^(-10 * target_position3));
     
