@@ -68,7 +68,10 @@ h = [position;...
 hN = [position;...
     velocity;...
     h_impact_location];
+    %velocity];
 
+    
+    
 %% MPCexport
 acadoSet('problemname', 'mav_position_mpc');
 

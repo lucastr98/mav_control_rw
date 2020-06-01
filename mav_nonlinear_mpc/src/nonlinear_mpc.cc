@@ -46,7 +46,7 @@ NonlinearModelPredictiveControl::NonlinearModelPredictiveControl(const ros::Node
       mpc_queue_(nh, private_nh, ACADO_N+1),
       command_roll_pitch_yaw_thrust_(0, 0, 0, 0),
       disturbance_observer_(nh, private_nh),
-      verbose_(false),
+      verbose_(true),
       solve_time_average_(0),
       received_first_odometry_(false)
 {
@@ -186,8 +186,9 @@ void NonlinearModelPredictiveControl::applyParameters()
   W_.block(8, 8, 3, 3) = r_command_.asDiagonal();
   W_.block(11, 11, 1, 1) = w_impact_location_.asDiagonal();
 
-  WN_ = solveCARE((Eigen::VectorXd(ACADO_NYN) << q_position_, q_velocity_, w_impact_location_).finished().asDiagonal(),
+  WN_.block(0,0,6,6) = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
                   r_command_.asDiagonal());
+  WN_.block(6,6,1,1) = w_impact_location_.asDiagonal();
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_NY>>(const_cast<double*>(acadoVariables.W)) = W_
       .transpose();
@@ -369,8 +370,11 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
     acado_online_data_.block(i, 9, 1, 3) << target_position_.transpose();
     acado_online_data_.block(i, 12, 1, 3) << target_velocity_.transpose();
   }
-  referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
+  //referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
+  referenceN_.block(0,0, 1, ACADO_NYN) << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose(), 0;
   acado_online_data_.block(ACADO_N, 6, 1, 3) << estimated_disturbances.transpose();
+  acado_online_data_.block(ACADO_N, 9, 1, 3) << target_position_.transpose();
+  acado_online_data_.block(ACADO_N, 12, 1, 3) << target_velocity_.transpose();
 
   x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W;
 
@@ -389,10 +393,10 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   int acado_status = acado_feedbackStep();
 
 
-  Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
-  std::stringstream ss;
-  ss << positionDifference;
-  ROS_WARN_STREAM(ss.str());
+  // Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
+  // std::stringstream ss;
+  // ss << ;
+  // ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 
