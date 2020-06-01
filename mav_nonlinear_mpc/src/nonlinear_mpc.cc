@@ -186,7 +186,7 @@ void NonlinearModelPredictiveControl::applyParameters()
   W_.block(8, 8, 3, 3) = r_command_.asDiagonal();
   W_.block(11, 11, 1, 1) = w_impact_location_.asDiagonal();
 
-  WN_ = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
+  WN_ = solveCARE((Eigen::VectorXd(ACADO_NYN) << q_position_, q_velocity_, w_impact_location_).finished().asDiagonal(),
                   r_command_.asDiagonal());
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_NY>>(const_cast<double*>(acadoVariables.W)) = W_
@@ -390,9 +390,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
 
   Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
-  // std::stringstream ss;
-  // ss << ;
-  // ROS_WARN_STREAM(ss.str());
+  std::stringstream ss;
+  ss << positionDifference;
+  ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 

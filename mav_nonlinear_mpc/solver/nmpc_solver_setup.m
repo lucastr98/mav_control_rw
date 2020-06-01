@@ -31,12 +31,13 @@ R = [cos(yaw)*cos(pitch)  cos(yaw)*sin(pitch)*sin(roll)-cos(roll)*sin(yaw)  (cos
     -sin(pitch)                            cos(pitch)*sin(roll)                            cos(pitch)*cos(roll)];
 
 z_B = R(:,3);
-    
-d_impact = (position-target_position)' * z_B;
 
-r_impact = (norm(position-target_position))^2 - d_impact^2;
+pos_diff = position - target_position;
+d_impact = (pos_diff)' * z_B;
 
-h_impact_location = 3.2* r_impact^3 + 1/(1+e^(-r_impact/0.009-5.1));
+r_impact = pos_diff(1)^2 + pos_diff(2)^2 + pos_diff(3)^2 - d_impact^2;
+
+h_impact_location =  1/(1+e^(-r_impact/0.009-5.1)); %3.2* r_impact^3 +
 %h_impact_location = h_impact_location / (1 + e^(-2.1*d_impact-5));  
 %h_impact_location = h_impact_location / (1 + e^(-10 * target_position3));
     
@@ -65,7 +66,8 @@ h = [position;...
     h_impact_location];
 
 hN = [position;...
-    velocity];
+    velocity;...
+    h_impact_location];
 
 %% MPCexport
 acadoSet('problemname', 'mav_position_mpc');

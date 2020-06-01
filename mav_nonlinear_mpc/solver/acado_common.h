@@ -78,7 +78,7 @@ extern "C"
 /** Number of references/measurements per node on the first N nodes. */
 #define ACADO_NY 12
 /** Number of references/measurements on the last (N + 1)st node. */
-#define ACADO_NYN 6
+#define ACADO_NYN 7
 /** Total number of QP optimization variables. */
 #define ACADO_QP_NV 60
 /** Number of integration steps per shooting interval. */
@@ -128,17 +128,17 @@ real_t od[ 315 ];
  */
 real_t y[ 240 ];
 
-/** Column vector of size: 6
+/** Column vector of size: 7
  * 
  *  Reference/measurement vector for the 21. node.
  */
-real_t yN[ 6 ];
+real_t yN[ 7 ];
 
 /** Matrix of size: 12 x 12 (row major format) */
 real_t W[ 144 ];
 
-/** Matrix of size: 6 x 6 (row major format) */
-real_t WN[ 36 ];
+/** Matrix of size: 7 x 7 (row major format) */
+real_t WN[ 49 ];
 
 /** Column vector of size: 9
  * 
@@ -178,8 +178,8 @@ real_t d[ 180 ];
 /** Column vector of size: 240 */
 real_t Dy[ 240 ];
 
-/** Column vector of size: 6 */
-real_t DyN[ 6 ];
+/** Column vector of size: 7 */
+real_t DyN[ 7 ];
 
 /** Matrix of size: 180 x 9 (row major format) */
 real_t evGx[ 1620 ];
@@ -187,8 +187,8 @@ real_t evGx[ 1620 ];
 /** Matrix of size: 180 x 3 (row major format) */
 real_t evGu[ 540 ];
 
-/** Column vector of size: 121 */
-real_t objAuxVar[ 121 ];
+/** Column vector of size: 53 */
+real_t objAuxVar[ 53 ];
 
 /** Row vector of size: 27 */
 real_t objValueIn[ 27 ];
@@ -214,8 +214,8 @@ real_t S1[ 540 ];
 /** Matrix of size: 9 x 9 (row major format) */
 real_t QN1[ 81 ];
 
-/** Matrix of size: 9 x 6 (row major format) */
-real_t QN2[ 54 ];
+/** Matrix of size: 9 x 7 (row major format) */
+real_t QN2[ 63 ];
 
 /** Column vector of size: 189 */
 real_t sbar[ 189 ];
