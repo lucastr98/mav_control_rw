@@ -24,29 +24,48 @@ n_U = length(controls);
 g = [0;0;9.8066];
 e = 2.718;
 
-%% Differential Equation
 
 R = [cos(yaw)*cos(pitch)  cos(yaw)*sin(pitch)*sin(roll)-cos(roll)*sin(yaw)  (cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll)); ...
     cos(pitch)*sin(yaw)  cos(yaw)*cos(roll)+sin(yaw)*sin(pitch)*sin(roll)  (sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll)); ...
     -sin(pitch)                            cos(pitch)*sin(roll)                            cos(pitch)*cos(roll)];
 
+x_B = R(:,1);
+y_B = R(:,2);
 z_B = R(:,3);
 
+%% Impact function
+
 pos_diff = position - target_position;
+x_impact = (pos_diff)' * x_B;
+y_impact = (pos_diff)' * y_B;
 d_impact = (pos_diff)' * z_B;
 
-r_impact = pos_diff(1)^2 + pos_diff(2)^2 + pos_diff(3)^2 - d_impact^2;
+r_impact = x_impact^2 + y_impact^2;
 
-h_impact_location =  1/(1+e^(-r_impact/0.009-5.1)); %3.2* r_impact^3 +
+h_impact_location =  3.2* r_impact^3 + 1/(1+e^(-r_impact/0.009-5.1));
 %h_impact_location = h_impact_location / (1 + e^(-2.1*d_impact-5));  
 %h_impact_location = h_impact_location / (1 + e^(-10 * target_position3));
-    
+
+%% Impact Predictor
+
+%Activation Functions with Integral = 1
+act_d = e^(-(9.4 * d_impact - 0.8)^2) * 9.4 / sqrt(pi);
+act_r = 1 / (1 + e^((r_impact-0.7)/0.02));
+
+v_diff = velocity - target_velocity;
+vz_diff = v_diff' * z_B;
+pred_z_force = 1 * vz_diff / (4.6 + 1) * act_d * act_r;
+pred_x_torque = 1 * vz_diff * x_impact / 0.192 * act_d * act_r;
+pred_y_torque = 1 * vz_diff * y_impact / 0.185 * act_d * act_r;
+
+
+%% Differential Equation
+
 %nonlinear drag model
 drag_acc = thrust*[linear_drag_coefficient1 0 0; 0 linear_drag_coefficient2 0; 0 0 0]*R'*velocity;
 
 droll = (1/roll_tau)*(roll_gain*roll_ref - roll);
 dpitch = (1/pitch_tau)*(pitch_gain*pitch_ref - pitch);
-
 
 f = dot([velocity; roll; pitch; yaw; position]) == ...
     [z_B*thrust-g-drag_acc+external_forces;...
