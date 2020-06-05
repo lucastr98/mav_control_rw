@@ -12,11 +12,13 @@
 
 ## Controller Parameters:
 mass: 6.0
+
 #simulation constants
 # roll_time_constant: 0.57
 # roll_gain: 1.07
 # pitch_time_constant: 0.57
 # pitch_gain: 1.07
+
 # outdoor constants
 roll_time_constant: 0.25
 roll_gain: 1.26
