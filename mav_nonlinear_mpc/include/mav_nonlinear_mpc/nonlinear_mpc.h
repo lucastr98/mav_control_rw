@@ -36,6 +36,7 @@
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <geometry_msgs/PointStamped.h>
+#include <drogone_action/FSMActionResult.h>
 #include <stdio.h>
 #include <mav_control_interface/mpc_queue.h>
 #include "acado_common.h"
@@ -125,7 +126,8 @@ class NonlinearModelPredictiveControl
 
     //get target position and velocity
   void initializeSubscribers(ros::NodeHandle& nh);
-  void targetCallback(const geometry_msgs::PointStamped& intersection_point);
+  void targetPositionCallback(const geometry_msgs::PointStamped& intersection_point);
+  void motionPlannerCallback(const drogone_action::FSMActionResult& result);
 
   // get reference and predicted state
   bool getCurrentReference(mav_msgs::EigenTrajectoryPoint* reference) const;
@@ -149,7 +151,8 @@ class NonlinearModelPredictiveControl
 
   // ros node handles
   ros::NodeHandle nh_, private_nh_;
-  ros::Subscriber target_sub_;
+  ros::Subscriber target_position_sub_;
+  ros::Subscriber motionplanner_sub_;
 
   // reset integrator service
   ros::ServiceServer reset_integrator_service_server_;

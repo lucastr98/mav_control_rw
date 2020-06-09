@@ -18,6 +18,8 @@ OnlineData external_forces(3);
 OnlineData target_position(3);
 OnlineData target_velocity(3);
 
+OnlineData w_activation;
+
 n_XD = length(diffStates);
 n_U = length(controls);
 
@@ -42,21 +44,21 @@ d_impact = (pos_diff)' * z_B;
 
 r_impact = x_impact^2 + y_impact^2;
 
-h_impact_location =  3.2* r_impact^3 + 1/(1+e^(-r_impact/0.009-5.1));
+h_impact_location =  1/(1+e^(-x_impact/0.05-3)); % 3.2* r_impact^3 + (1+e^(-r_impact/0.009-5.1))
 %h_impact_location = h_impact_location / (1 + e^(-2.1*d_impact-5));  
 %h_impact_location = h_impact_location / (1 + e^(-10 * target_position3));
 
 %% Impact Predictor
 
 %Activation Functions with Integral = 1
-act_d = e^(-(9.4 * d_impact - 0.8)^2) * 9.4 / sqrt(pi);
-act_r = 1 / (1 + e^((r_impact-0.7)/0.02));
-
-v_diff = velocity - target_velocity;
-vz_diff = v_diff' * z_B;
-pred_z_force = 1 * vz_diff / (4.6 + 1) * act_d * act_r;
-pred_x_torque = 1 * vz_diff * x_impact / 0.192;
-pred_y_torque = 1 * vz_diff * y_impact / 0.185;
+% act_d = e^(-(9.4 * d_impact - 0.8)^2) * 9.4 / sqrt(pi);
+% act_r = 1 / (1 + e^((r_impact-0.7)/0.02));
+% 
+% v_diff = velocity - target_velocity;
+% vz_diff = v_diff' * z_B;
+% pred_z_force = 1 * vz_diff / (4.6 + 1) * act_d * act_r;
+% pred_x_torque = 1 * vz_diff * x_impact / 0.192 * act_d * act_r;
+% pred_y_torque = 1 * vz_diff * y_impact / 0.185 * act_d * act_r;
 
 
 %% Differential Equation

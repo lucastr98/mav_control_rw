@@ -87,13 +87,18 @@ bool NonlinearModelPredictiveControl::resetIntegratorServiceCallback(std_srvs::E
 }
 
 void NonlinearModelPredictiveControl::initializeSubscribers(ros::NodeHandle& nh) {
-  target_sub_ = nh.subscribe("/visualizationi/intersection_point", 5, &NonlinearModelPredictiveControl::targetCallback, this);
+  target_position_sub_ = nh.subscribe("/visualizationi/intersection_point", 10, &NonlinearModelPredictiveControl::targetPositionCallback, this);
+  motionplanner_sub_ = nh.subscribe("Motionplanner/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
 }
 
-void NonlinearModelPredictiveControl::targetCallback(const geometry_msgs::PointStamped& intersection_point){
+void NonlinearModelPredictiveControl::targetPositionCallback(const geometry_msgs::PointStamped& intersection_point){
    target_position_[0] = intersection_point.point.x;
    target_position_[1] = intersection_point.point.y;
    target_position_[2] = intersection_point.point.z;
+}
+
+void NonlinearModelPredictiveControl::motionPlannerCallback(const drogone_action::FSMActionResult& result){
+
 }
 
 void NonlinearModelPredictiveControl::initializeParameters()
