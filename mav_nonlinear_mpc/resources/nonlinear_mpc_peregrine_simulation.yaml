@@ -11,30 +11,30 @@
 #==================================================================================================================
 
 ## Controller Parameters:
-mass: 6.0
+mass: 4.6
 
 #simulation constants
-# roll_time_constant: 0.57
-# roll_gain: 1.07
-# pitch_time_constant: 0.57
-# pitch_gain: 1.07
+roll_time_constant: 0.57
+roll_gain: 1.07
+pitch_time_constant: 0.57
+pitch_gain: 1.07
 
 # outdoor constants
-roll_time_constant: 0.25
-roll_gain: 1.26
-pitch_time_constant: 0.231
-pitch_gain: 1.14
+# roll_time_constant: 0.25
+# roll_gain: 1.26
+# pitch_time_constant: 0.231
+# pitch_gain: 1.14
 
 linear_drag_coefficients: [0.01, 0.01, 0]
 
 # dynamic config default values:
 q_x : 8
 q_y : 8
-q_z : 80
+q_z : 150
 
 q_vx : 3
 q_vy : 3
-q_vz : 25
+q_vz : 30
 
 q_roll : 30
 q_pitch: 30
@@ -42,8 +42,6 @@ q_pitch: 30
 r_roll  : 500
 r_pitch : 500
 r_thrust : 2
-
-w_impact_location : 1
 
 roll_max: deg(40.0)
 pitch_max: deg(40.0)
