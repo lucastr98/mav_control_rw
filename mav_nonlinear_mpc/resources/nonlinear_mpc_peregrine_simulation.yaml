@@ -43,6 +43,8 @@ r_roll  : 500
 r_pitch : 500
 r_thrust : 2
 
+w_impact_location : 1
+
 roll_max: deg(40.0)
 pitch_max: deg(40.0)
 thrust_min: 5

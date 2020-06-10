@@ -29,7 +29,6 @@
  */
 
 #include <tf/transform_datatypes.h>
-
 #include <mav_nonlinear_mpc/nonlinear_mpc.h>
 
 namespace mav_control {
@@ -98,7 +97,10 @@ void NonlinearModelPredictiveControl::targetPositionCallback(const geometry_msgs
 }
 
 void NonlinearModelPredictiveControl::motionPlannerCallback(const drogone_action::FSMActionResult& result){
-
+  if(catch_status_ == 0 && odometry_.position_W[2] > 2){
+    catch_status_ = 1;
+    applyParameters();
+  }
 }
 
 void NonlinearModelPredictiveControl::initializeParameters()
@@ -189,16 +191,25 @@ void NonlinearModelPredictiveControl::applyParameters()
   W_.block(3, 3, 3, 3) = q_velocity_.asDiagonal();
   W_.block(6, 6, 2, 2) = q_attitude_.asDiagonal();
   W_.block(8, 8, 3, 3) = r_command_.asDiagonal();
-  W_.block(11, 11, 1, 1) = w_impact_location_.asDiagonal();
+  Eigen::VectorXd w_impact_location = w_impact_location_;
+  if(catch_status_ != 1){
+    w_impact_location = 0 * w_impact_location;
+  }
+  W_.block(11, 11, 1, 1) = w_impact_location.asDiagonal();
 
   WN_.block(0,0,6,6) = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
                   r_command_.asDiagonal());
-  WN_.block(6,6,1,1) = w_impact_location_.asDiagonal();
+  WN_.block(6,6,1,1) = 0 * w_impact_location.asDiagonal();
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_NY>>(const_cast<double*>(acadoVariables.W)) = W_
       .transpose();
   Eigen::Map<Eigen::Matrix<double, ACADO_NYN, ACADO_NYN>>(const_cast<double*>(acadoVariables.WN)) =
       WN_.transpose();
+
+  std::stringstream ss;
+  ss << W_;
+  ROS_WARN_STREAM(ss.str());
+
 
   for (size_t i = 0; i < ACADO_N; ++i) {
     acadoVariables.lbValues[3 * i] = -roll_limit_;       // min roll
@@ -213,7 +224,7 @@ void NonlinearModelPredictiveControl::applyParameters()
     std::cout << "q_position_: " << q_position_.transpose() << std::endl;
     std::cout << "q_velocity_: " << q_velocity_.transpose() << std::endl;
     std::cout << "r_command_: " << r_command_.transpose() << std::endl;
-    std::cout << "w_impact_location_: " << w_impact_location_.transpose() << std::endl;
+    std::cout << "w_impact_location_: " << w_impact_location.transpose() << std::endl;
     std::cout << "W_N = \n" << WN_ << std::endl;
   }
 }

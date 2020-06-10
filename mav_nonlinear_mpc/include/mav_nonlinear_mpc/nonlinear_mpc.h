@@ -159,6 +159,9 @@ class NonlinearModelPredictiveControl
   bool resetIntegratorServiceCallback(std_srvs::Empty::Request &req,
                                       std_srvs::Empty::Response &res);
 
+  //catch status
+  int catch_status_ = 0; //0 = before, 1 = during, 2 = after
+
   // sampling time parameters
   void initializeParameters();
   bool initialized_parameters_;

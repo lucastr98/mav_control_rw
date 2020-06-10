@@ -80,6 +80,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     OnlineData target_velocity1; 
     OnlineData target_velocity2; 
     OnlineData target_velocity3; 
+    OnlineData w_minimum1; 
+    OnlineData w_minimum2; 
+    OnlineData w_minimum3; 
+    OnlineData w_activation; 
     BMatrix acadodata_M1;
     acadodata_M1.read( "mav_position_mpc_data_acadodata_M1.txt" );
     BMatrix acadodata_M2;
@@ -127,7 +131,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     ocp1.setNU( 3 );
     ocp1.setNP( 0 );
-    ocp1.setNOD( 15 );
+    ocp1.setNOD( 19 );
     OCPexport ExportModule1( ocp1 );
     ExportModule1.set( GENERATE_MATLAB_INTERFACE, 1 );
     uint options_flag;

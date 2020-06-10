@@ -17,9 +17,6 @@ OnlineData external_forces(3);
 
 OnlineData target_position(3);
 OnlineData target_velocity(3);
-OnlineData w_minimum(3);
-
-OnlineData w_activation;    
 
 n_XD = length(diffStates);
 n_U = length(controls);
