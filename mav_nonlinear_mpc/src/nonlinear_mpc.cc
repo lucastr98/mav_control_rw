@@ -199,7 +199,7 @@ void NonlinearModelPredictiveControl::applyParameters()
 
   WN_.block(0,0,6,6) = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
                   r_command_.asDiagonal());
-  WN_.block(6,6,1,1) = 0 * w_impact_location.asDiagonal();
+  WN_.block(6,6,1,1) = w_impact_location.asDiagonal();
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_NY>>(const_cast<double*>(acadoVariables.W)) = W_
       .transpose();

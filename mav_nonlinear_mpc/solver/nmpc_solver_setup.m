@@ -42,9 +42,7 @@ d_impact = (pos_diff)' * z_B;
 
 r_impact = x_impact^2 + y_impact^2;
 
-h_impact_location =  1/(1+e^(-x_impact/0.05-3)); % 3.2* r_impact^3 + (1+e^(-r_impact/0.009-5.1))
-%h_impact_location = h_impact_location / (1 + e^(-2.1*d_impact-5));  
-%h_impact_location = h_impact_location / (1 + e^(-10 * target_position3));
+h_impact_location = 1/(1+e^(r_impact*111-5.1))+0.1 * (x_impact+y_impact); %1/(1+e^(-x_impact/0.05-3)); 3.2* r_impact^3 + (1+e^(-r_impact/0.009-5.1))
 
 %% Impact Predictor
 
@@ -57,7 +55,6 @@ h_impact_location =  1/(1+e^(-x_impact/0.05-3)); % 3.2* r_impact^3 + (1+e^(-r_im
 % pred_z_force = 1 * vz_diff / (4.6 + 1) * act_d * act_r;
 % pred_x_torque = 1 * vz_diff * x_impact / 0.192 * act_d * act_r;
 % pred_y_torque = 1 * vz_diff * y_impact / 0.185 * act_d * act_r;
-
 
 %% Differential Equation
 
