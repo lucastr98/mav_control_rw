@@ -86,7 +86,7 @@ bool NonlinearModelPredictiveControl::resetIntegratorServiceCallback(std_srvs::E
 }
 
 void NonlinearModelPredictiveControl::initializeSubscribers(ros::NodeHandle& nh) {
-  target_position_sub_ = nh.subscribe("/visualizationi/intersection_point", 10, &NonlinearModelPredictiveControl::targetPositionCallback, this);
+  target_position_sub_ = nh.subscribe("/visualization/intersection_point", 10, &NonlinearModelPredictiveControl::targetPositionCallback, this);
   motionplanner_sub_ = nh.subscribe("Motionplanner/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
 }
 
