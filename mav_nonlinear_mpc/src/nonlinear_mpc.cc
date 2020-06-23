@@ -373,6 +373,12 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   Eigen::Vector3d estimated_disturbances_B =
       odometry_.orientation_W_B.toRotationMatrix().transpose() * estimated_disturbances;
 
+  Eigen::Vector3d target_position = target_position_;
+
+  if (W_(11,11) == 0){
+    target_position = odometry_.position_W;
+  }
+
   for (size_t i = 0; i < ACADO_N; i++) {
     Eigen::Vector3d acceleration_ref_B = odometry_.orientation_W_B.toRotationMatrix().transpose()
         * acceleration_ref_[i];
@@ -383,13 +389,13 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
     reference_.block(i, 0, 1, ACADO_NY) << position_ref_[i].transpose(), velocity_ref_[i].transpose(), feed_forward
         .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2), 0;
     acado_online_data_.block(i, 6, 1, 3) << estimated_disturbances.transpose();
-    acado_online_data_.block(i, 9, 1, 3) << target_position_.transpose();
+    acado_online_data_.block(i, 9, 1, 3) << target_position.transpose();
     acado_online_data_.block(i, 12, 1, 3) << target_velocity_.transpose();
   }
   //referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
   referenceN_.block(0,0, 1, ACADO_NYN) << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose(), 0;
   acado_online_data_.block(ACADO_N, 6, 1, 3) << estimated_disturbances.transpose();
-  acado_online_data_.block(ACADO_N, 9, 1, 3) << target_position_.transpose();
+  acado_online_data_.block(ACADO_N, 9, 1, 3) << target_position.transpose();
   acado_online_data_.block(ACADO_N, 12, 1, 3) << target_velocity_.transpose();
 
   x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W;
@@ -410,9 +416,11 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
 
   //Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
-  // std::stringstream ss;
-  // ss << target_position_[0] << target_position_[1] << target_position_[2];
-  // ROS_WARN_STREAM(ss.str());
+  std::stringstream ss;
+  ss << target_position_;
+  ss << target_position;
+  ss << W_(11, 11);
+  ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 
