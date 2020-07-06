@@ -118,6 +118,7 @@ class NonlinearModelPredictiveControl
   }
 
   void applyParameters();
+  void applyNewOffsetWeight();
 
   double getMass() const
   {

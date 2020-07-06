@@ -42,7 +42,7 @@ d_impact = (pos_diff)' * z_B;
 
 r_impact = x_impact^2 + y_impact^2;
 
-h_impact_location = 1/(1+e^(r_impact*111-5.1))-0.5 * (x_impact+y_impact); %1/(1+e^(-x_impact/0.05-3)); 3.2* r_impact^3 + (1+e^(-r_impact/0.009-5.1))
+h_impact_location = 1/(1+e^(r_impact*111-5.1)); %-0.5 * (x_impact+y_impact); %1/(1+e^(-x_impact/0.05-3)); 3.2* r_impact^3 + (1+e^(-r_impact/0.009-5.1))
 
 %% Impact Predictor
 

@@ -87,7 +87,7 @@ bool NonlinearModelPredictiveControl::resetIntegratorServiceCallback(std_srvs::E
 
 void NonlinearModelPredictiveControl::initializeSubscribers(ros::NodeHandle& nh) {
   target_position_sub_ = nh.subscribe("/visualization/intersection_point", 10, &NonlinearModelPredictiveControl::targetPositionCallback, this);
-  motionplanner_sub_ = nh.subscribe("GUI/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
+  motionplanner_sub_ = nh.subscribe("Motionplanner/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
 }
 
 void NonlinearModelPredictiveControl::targetPositionCallback(const geometry_msgs::PointStamped& intersection_point){
@@ -101,11 +101,11 @@ void NonlinearModelPredictiveControl::motionPlannerCallback(const drogone_action
   ss << catch_status_ << " --> ";
   if(catch_status_ == 0 && odometry_.position_W[2] > 2){
     catch_status_ = 1;
-    applyParameters();
+    applyNewOffsetWeight();
   }
   else if(catch_status_ == 1){
     catch_status_ = 2;
-    applyParameters();
+    applyNewOffsetWeight();
   }
   ss << catch_status_;
   ROS_WARN_STREAM(ss.str());
@@ -195,30 +195,39 @@ void NonlinearModelPredictiveControl::initializeParameters()
   ROS_INFO("Nonlinear MPC: initialized correctly");
 }
 
+void NonlinearModelPredictiveControl::applyNewOffsetWeight(){
+  Eigen::VectorXd w_impact_location = 0 * w_impact_location_;
+  if(catch_status_ == 1){
+    if(W_(11,11) < w_impact_location_(0,0)){
+      w_impact_location = (W_(11,11) + 0.1) * w_impact_location_/w_impact_location_(0,0);
+    }
+  }
+  W_.block(11, 11, 1, 1) = w_impact_location.asDiagonal();
+  WN_.block(6,6,1,1) = w_impact_location.asDiagonal();
+  std::stringstream ss;
+  ss << "New W_weight: " << W_(11,11);
+  ROS_WARN_STREAM(ss.str());
+  Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_NY>>(const_cast<double*>(acadoVariables.W)) = W_
+      .transpose();
+  Eigen::Map<Eigen::Matrix<double, ACADO_NYN, ACADO_NYN>>(const_cast<double*>(acadoVariables.WN)) =
+      WN_.transpose();
+}
+
 void NonlinearModelPredictiveControl::applyParameters()
 {
   W_.block(0, 0, 3, 3) = q_position_.asDiagonal();
   W_.block(3, 3, 3, 3) = q_velocity_.asDiagonal();
   W_.block(6, 6, 2, 2) = q_attitude_.asDiagonal();
   W_.block(8, 8, 3, 3) = r_command_.asDiagonal();
-  Eigen::VectorXd w_impact_location = w_impact_location_;
-  if(catch_status_ != 1){
-    w_impact_location = 0 * w_impact_location;
-  }
-  W_.block(11, 11, 1, 1) = w_impact_location.asDiagonal();
+  applyNewOffsetWeight();
 
   WN_.block(0,0,6,6) = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
                   r_command_.asDiagonal());
-  WN_.block(6,6,1,1) = w_impact_location.asDiagonal();
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_NY>>(const_cast<double*>(acadoVariables.W)) = W_
       .transpose();
   Eigen::Map<Eigen::Matrix<double, ACADO_NYN, ACADO_NYN>>(const_cast<double*>(acadoVariables.WN)) =
       WN_.transpose();
-
-  std::stringstream ss;
-  ss << W_;
-  ROS_WARN_STREAM(ss.str());
 
 
   for (size_t i = 0; i < ACADO_N; ++i) {
@@ -234,7 +243,6 @@ void NonlinearModelPredictiveControl::applyParameters()
     std::cout << "q_position_: " << q_position_.transpose() << std::endl;
     std::cout << "q_velocity_: " << q_velocity_.transpose() << std::endl;
     std::cout << "r_command_: " << r_command_.transpose() << std::endl;
-    std::cout << "w_impact_location_: " << w_impact_location.transpose() << std::endl;
     std::cout << "W_N = \n" << WN_ << std::endl;
   }
 }
@@ -388,6 +396,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   if (W_(11,11) == 0){
     target_position = odometry_.position_W;
   }
+  if(W_(11,11) != 0 && W_(11,11) != w_impact_location_(0,0)){
+    applyNewOffsetWeight();
+  }
 
   for (size_t i = 0; i < ACADO_N; i++) {
     Eigen::Vector3d acceleration_ref_B = odometry_.orientation_W_B.toRotationMatrix().transpose()
@@ -426,10 +437,10 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
 
   Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
-  // double r = pow(positionDifference[0],2) + pow(positionDifference[1],2);
-  std::stringstream ss;
-  ss << positionDifference;
-  ROS_WARN_STREAM(ss.str());
+  // // double r = pow(positionDifference[0],2) + pow(positionDifference[1],2);
+  // std::stringstream ss;
+  // ss << positionDifference;
+  // ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 
@@ -437,8 +448,8 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   double pitch_ref = acadoVariables.u[1];
   double thrust_ref = acadoVariables.u[2];
 
-  std::stringstream sss;
-  // sss << acadoVariables.u[0] << std::endl<<acadoVariables.u[1] << std::endl<<acadoVariables.u[2] << std::endl;
+  // std::stringstream sss;
+  // sss << x_0  << std::endl << std::endl<< positionDifference << std::endl << std::endl << acadoVariables.u[0] << std::endl<<acadoVariables.u[1] << std::endl<<acadoVariables.u[2] << std::endl;
   // ROS_WARN_STREAM(sss.str());
 
   if (std::isnan(roll_ref) || std::isnan(pitch_ref) || std::isnan(thrust_ref)
