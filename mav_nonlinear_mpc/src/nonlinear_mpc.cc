@@ -87,7 +87,7 @@ bool NonlinearModelPredictiveControl::resetIntegratorServiceCallback(std_srvs::E
 
 void NonlinearModelPredictiveControl::initializeSubscribers(ros::NodeHandle& nh) {
   target_position_sub_ = nh.subscribe("/visualization/intersection_point", 10, &NonlinearModelPredictiveControl::targetPositionCallback, this);
-  motionplanner_sub_ = nh.subscribe("Motionplanner/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
+  motionplanner_sub_ = nh.subscribe("GUI/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
 }
 
 void NonlinearModelPredictiveControl::targetPositionCallback(const geometry_msgs::PointStamped& intersection_point){
@@ -97,10 +97,20 @@ void NonlinearModelPredictiveControl::targetPositionCallback(const geometry_msgs
 }
 
 void NonlinearModelPredictiveControl::motionPlannerCallback(const drogone_action::FSMActionResult& result){
+  std::stringstream ss;
+  ss << catch_status_ << " --> ";
   if(catch_status_ == 0 && odometry_.position_W[2] > 2){
     catch_status_ = 1;
     applyParameters();
   }
+  else if(catch_status_ == 1){
+    catch_status_ = 2;
+    applyParameters();
+  }
+  ss << catch_status_;
+  ROS_WARN_STREAM(ss.str());
+
+
 }
 
 void NonlinearModelPredictiveControl::initializeParameters()
@@ -415,11 +425,10 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   int acado_status = acado_feedbackStep();
 
 
-  //Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
+  Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
+  // double r = pow(positionDifference[0],2) + pow(positionDifference[1],2);
   std::stringstream ss;
-  ss << target_position_;
-  ss << target_position;
-  ss << W_(11, 11);
+  ss << positionDifference;
   ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
@@ -427,6 +436,10 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   double roll_ref = acadoVariables.u[0];
   double pitch_ref = acadoVariables.u[1];
   double thrust_ref = acadoVariables.u[2];
+
+  std::stringstream sss;
+  // sss << acadoVariables.u[0] << std::endl<<acadoVariables.u[1] << std::endl<<acadoVariables.u[2] << std::endl;
+  // ROS_WARN_STREAM(sss.str());
 
   if (std::isnan(roll_ref) || std::isnan(pitch_ref) || std::isnan(thrust_ref)
       || acado_status != 0) {
