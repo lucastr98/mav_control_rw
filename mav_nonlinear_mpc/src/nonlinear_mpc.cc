@@ -201,6 +201,9 @@ void NonlinearModelPredictiveControl::applyNewOffsetWeight(){
     if(W_(11,11) < w_impact_location_(0,0)){
       w_impact_location = (W_(11,11) + 0.1) * w_impact_location_/w_impact_location_(0,0);
     }
+    else{
+      w_impact_location = w_impact_location_; 
+    }
   }
   W_.block(11, 11, 1, 1) = w_impact_location.asDiagonal();
   WN_.block(6,6,1,1) = w_impact_location.asDiagonal();
