@@ -61,6 +61,7 @@ class NonlinearModelPredictiveControl
   NonlinearModelPredictiveControl(const ros::NodeHandle& nh, const ros::NodeHandle& private_nh);
   ~NonlinearModelPredictiveControl();
 
+  ros::Publisher pub_costs;  
   // Dynamic parameters
   void setPositionPenality(const Eigen::Vector3d& q_position)
   {

@@ -30,6 +30,8 @@
 
 #include <tf/transform_datatypes.h>
 #include <mav_nonlinear_mpc/nonlinear_mpc.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
 
 namespace mav_control {
 
@@ -62,6 +64,9 @@ NonlinearModelPredictiveControl::NonlinearModelPredictiveControl(const ros::Node
 
   target_position_.setZero();
   target_velocity_.setZero();
+
+  pub_costs = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/peregrine/mpc_costs", 10);
+
 
 
   reset_integrator_service_server_ = nh_.advertiseService(
@@ -202,7 +207,7 @@ void NonlinearModelPredictiveControl::applyNewOffsetWeight(){
       w_impact_location = (W_(11,11) + 0.1) * w_impact_location_/w_impact_location_(0,0);
     }
     else{
-      w_impact_location = w_impact_location_; 
+      w_impact_location = w_impact_location_;
     }
   }
   W_.block(11, 11, 1, 1) = w_impact_location.asDiagonal();
@@ -450,6 +455,25 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   double roll_ref = acadoVariables.u[0];
   double pitch_ref = acadoVariables.u[1];
   double thrust_ref = acadoVariables.u[2];
+
+  float x_zero[11]= {odometry_.position_W[0], odometry_.position_W[1] , odometry_.position_W[2],
+            odometry_.getVelocityWorld()[0],  odometry_.getVelocityWorld()[1],  odometry_.getVelocityWorld()[2],
+            current_rpy[0], current_rpy[1], roll_ref, pitch_ref, float(thrust_ref)- float(9.81)};
+
+  geometry_msgs::PoseWithCovarianceStamped costs;
+  float x_delta;
+  for(int i=0; i<ACADO_NY-1; i++ ){
+    x_delta =  x_zero[i] - reference_(0,i);
+    costs.pose.covariance[i] = x_delta*x_delta*W_(i,i);
+  }
+
+  Eigen::Vector3d acceleration_ref_B = odometry_.orientation_W_B.toRotationMatrix().transpose()
+      * acceleration_ref_[0];
+
+  x_delta =  x_zero[10] - acceleration_ref_B(2);
+  costs.pose.covariance[10] = x_delta*x_delta*W_(10,10);
+  costs.header.stamp = ros::Time::now();
+  pub_costs.publish(costs);
 
   // std::stringstream sss;
   // sss << x_0  << std::endl << std::endl<< positionDifference << std::endl << std::endl << acadoVariables.u[0] << std::endl<<acadoVariables.u[1] << std::endl<<acadoVariables.u[2] << std::endl;
