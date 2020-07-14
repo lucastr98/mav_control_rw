@@ -61,7 +61,7 @@ class NonlinearModelPredictiveControl
   NonlinearModelPredictiveControl(const ros::NodeHandle& nh, const ros::NodeHandle& private_nh);
   ~NonlinearModelPredictiveControl();
 
-  ros::Publisher pub_costs;  
+  ros::Publisher pub_costs;
   // Dynamic parameters
   void setPositionPenality(const Eigen::Vector3d& q_position)
   {
@@ -130,6 +130,7 @@ class NonlinearModelPredictiveControl
   void initializeSubscribers(ros::NodeHandle& nh);
   void targetPositionCallback(const geometry_msgs::PointStamped& intersection_point);
   void motionPlannerCallback(const drogone_action::FSMActionResult& result);
+  void guiCallback(const drogone_action::FSMActionResult& result);
 
   // get reference and predicted state
   bool getCurrentReference(mav_msgs::EigenTrajectoryPoint* reference) const;
@@ -155,6 +156,7 @@ class NonlinearModelPredictiveControl
   ros::NodeHandle nh_, private_nh_;
   ros::Subscriber target_position_sub_;
   ros::Subscriber motionplanner_sub_;
+  ros::Subscriber gui_sub_;
 
   // reset integrator service
   ros::ServiceServer reset_integrator_service_server_;
