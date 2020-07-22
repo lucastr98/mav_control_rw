@@ -62,6 +62,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     DifferentialState position1;
     DifferentialState position2;
     DifferentialState position3;
+    DifferentialState rollrate_ext;
+    DifferentialState pitchrate_ext;
     Control roll_ref;
     Control pitch_ref;
     Control thrust;
@@ -80,6 +82,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     OnlineData target_velocity1; 
     OnlineData target_velocity2; 
     OnlineData target_velocity3; 
+    OnlineData external_torques1; 
+    OnlineData external_torques2; 
     BMatrix acadodata_M1;
     acadodata_M1.read( "mav_position_mpc_data_acadodata_M1.txt" );
     BMatrix acadodata_M2;
@@ -115,19 +119,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     acadodata_f3 << dot(velocity1) == (-(-sin(pitch))*linear_drag_coefficient1*thrust*velocity3+(cos(roll)*cos(yaw)*sin(pitch)+sin(roll)*sin(yaw))*thrust-cos(pitch)*cos(yaw)*linear_drag_coefficient1*thrust*velocity1-cos(pitch)*linear_drag_coefficient1*sin(yaw)*thrust*velocity2+external_forces1);
     acadodata_f3 << dot(velocity2) == (-(-cos(roll)*sin(yaw)+cos(yaw)*sin(pitch)*sin(roll))*linear_drag_coefficient2*thrust*velocity1-(cos(roll)*cos(yaw)+sin(pitch)*sin(roll)*sin(yaw))*linear_drag_coefficient2*thrust*velocity2+(cos(roll)*sin(pitch)*sin(yaw)-cos(yaw)*sin(roll))*thrust-cos(pitch)*linear_drag_coefficient2*sin(roll)*thrust*velocity3+external_forces2);
     acadodata_f3 << dot(velocity3) == (-9.80659999999999953957e+00+cos(pitch)*cos(roll)*thrust+external_forces3);
-    acadodata_f3 << dot(roll) == (-roll+roll_gain*roll_ref)/roll_tau;
-    acadodata_f3 << dot(pitch) == (-pitch+pitch_gain*pitch_ref)/pitch_tau;
+    acadodata_f3 << dot(roll) == ((-roll+roll_gain*roll_ref)/roll_tau+rollrate_ext);
+    acadodata_f3 << dot(pitch) == ((-pitch+pitch_gain*pitch_ref)/pitch_tau+pitchrate_ext);
     acadodata_f3 << dot(yaw) == 0.00000000000000000000e+00;
     acadodata_f3 << dot(position1) == velocity1;
     acadodata_f3 << dot(position2) == velocity2;
     acadodata_f3 << dot(position3) == velocity3;
+    acadodata_f3 << dot(rollrate_ext) == external_torques1;
+    acadodata_f3 << dot(pitchrate_ext) == external_torques2;
 
     ocp1.setModel( acadodata_f3 );
 
 
     ocp1.setNU( 3 );
     ocp1.setNP( 0 );
-    ocp1.setNOD( 15 );
+    ocp1.setNOD( 17 );
     OCPexport ExportModule1( ocp1 );
     ExportModule1.set( GENERATE_MATLAB_INTERFACE, 1 );
     uint options_flag;

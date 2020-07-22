@@ -271,7 +271,7 @@ void NonlinearModelPredictiveControl::setOdometry(const mav_msgs::EigenOdometry&
 
     Eigen::VectorXd x0(ACADO_NX);
 
-    x0 << odometry.getVelocityWorld(), euler_angles, odometry.position_W;
+    x0 << odometry.getVelocityWorld(), euler_angles, odometry.position_W, 0, 0;
 
     initializeAcadoSolver(x0);
 
@@ -352,6 +352,7 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
   Eigen::VectorXd KF_estimated_state;
   Eigen::Vector3d estimated_disturbances;
+  Eigen::Vector2d estimated_torques;
   Eigen::Matrix<double, ACADO_NX, 1> x_0;
 
   Eigen::Vector3d current_rpy;
@@ -376,8 +377,10 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
   if (enable_offset_free_ == true) {
     estimated_disturbances = KF_estimated_state.segment(12, kDisturbanceSize);
+    estimated_torques = KF_estimated_state.segment(15, 2);
   } else {
     estimated_disturbances.setZero(kDisturbanceSize);
+    estimated_torques.setZero();
   }
 
   if (enable_integrator_) {
@@ -407,9 +410,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
   Eigen::Vector3d target_position = target_position_;
 
-  if (W_(11,11) == 0){
-    target_position = odometry_.position_W;
-  }
+  // if (W_(11,11) == 0){
+  //   target_position = odometry_.position_W;
+  // }
   // if(W_(11,11) != 0 && W_(11,11) != w_impact_location_(0,0)){
   //   applyNewOffsetWeight();
   // }
@@ -433,7 +436,7 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   acado_online_data_.block(ACADO_N, 9, 1, 3) << target_position.transpose();
   acado_online_data_.block(ACADO_N, 12, 1, 3) << target_velocity_.transpose();
 
-  x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W;
+  x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W, 0, 0;
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NX, 1>>(const_cast<double*>(acadoVariables.x0)) = x_0;
   Eigen::Map<Eigen::Matrix<double, ACADO_NY, ACADO_N>>(const_cast<double*>(acadoVariables.y)) =
@@ -449,11 +452,11 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   int acado_status = acado_feedbackStep();
 
 
-  Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
+  // Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
   // // double r = pow(positionDifference[0],2) + pow(positionDifference[1],2);
-  // std::stringstream ss;
-  // ss << positionDifference;
-  // ROS_WARN_STREAM(ss.str());
+  std::stringstream ss;
+  ss << estimated_torques;
+  ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 
@@ -479,10 +482,6 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   costs.pose.covariance[10] = x_delta*x_delta*W_(10,10);
   costs.header.stamp = ros::Time::now();
   pub_costs.publish(costs);
-
-  // std::stringstream sss;
-  // sss << x_0  << std::endl << std::endl<< positionDifference << std::endl << std::endl << acadoVariables.u[0] << std::endl<<acadoVariables.u[1] << std::endl<<acadoVariables.u[2] << std::endl;
-  // ROS_WARN_STREAM(sss.str());
 
   if (std::isnan(roll_ref) || std::isnan(pitch_ref) || std::isnan(thrust_ref)
       || acado_status != 0) {

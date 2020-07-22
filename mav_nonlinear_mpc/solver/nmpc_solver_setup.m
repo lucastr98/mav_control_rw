@@ -5,7 +5,7 @@ close all;
 Ts = 0.1; %prediction sampling time
 EXPORT = 1;
 
-DifferentialState velocity(3) roll pitch yaw position(3) ;
+DifferentialState velocity(3) roll pitch yaw position(3) rollrate_ext pitchrate_ext;
 Control roll_ref pitch_ref thrust;
 
 OnlineData roll_tau;
@@ -17,6 +17,9 @@ OnlineData external_forces(3);
 
 OnlineData target_position(3);
 OnlineData target_velocity(3);
+
+OnlineData external_torques(2);
+
 
 n_XD = length(diffStates);
 n_U = length(controls);
@@ -38,7 +41,7 @@ z_B = R(:,3);
 pos_diff = position - target_position;
 x_impact = (pos_diff)' * x_B;
 y_impact = (pos_diff)' * y_B;
-d_impact = (pos_diff)' * z_B;
+z_impact = (pos_diff)' * z_B;
 
 r_impact = x_impact^2 + y_impact^2;
 
@@ -47,13 +50,12 @@ h_impact_location = e^(-(r_impact*111-5.1))/(1+e^(-(r_impact*111-5.1)))+ (x_impa
 %% Impact Predictor
 
 %Activation Functions with Integral = 1
-% act_d = e^(-(9.4 * d_impact - 0.8)^2) * 9.4 / sqrt(pi);
 % act_r = 1 / (1 + e^((r_impact-0.7)/0.02));
 % 
 % v_diff = velocity - target_velocity;
 % vz_diff = v_diff' * z_B;
 % pred_z_force = 1 * vz_diff / (4.6 + 1) * act_d * act_r;
-% pred_x_torque = 1 * vz_diff * x_impact / 0.192 * act_d * act_r;
+% pred_x_torque = 1 * vz_diff * x_impact / 0.192 * act_ * act_r;
 % pred_y_torque = 1 * vz_diff * y_impact / 0.185 * act_d * act_r;
 
 %% Differential Equation
@@ -61,15 +63,17 @@ h_impact_location = e^(-(r_impact*111-5.1))/(1+e^(-(r_impact*111-5.1)))+ (x_impa
 %nonlinear drag model
 drag_acc = thrust*[linear_drag_coefficient1 0 0; 0 linear_drag_coefficient2 0; 0 0 0]*R'*velocity;
 
-droll = (1/roll_tau)*(roll_gain*roll_ref - roll);
-dpitch = (1/pitch_tau)*(pitch_gain*pitch_ref - pitch);
+droll = (1/roll_tau)*(roll_gain*roll_ref - roll) + rollrate_ext;
+dpitch = (1/pitch_tau)*(pitch_gain*pitch_ref - pitch) + pitchrate_ext;
 
-f = dot([velocity; roll; pitch; yaw; position]) == ...
+f = dot([velocity; roll; pitch; yaw; position; rollrate_ext; pitchrate_ext]) == ...
     [z_B*thrust-g-drag_acc+external_forces;...
     droll; ...
     dpitch;...
     0;...
     velocity;...
+    external_torques1;...
+    external_torques2;...
     ];
 
 h = [position;...
