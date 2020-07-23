@@ -14,12 +14,12 @@ OnlineData pitch_tau;
 OnlineData pitch_gain;
 OnlineData linear_drag_coefficient(2);
 OnlineData external_forces(3);
+OnlineData external_torques(2);
 
 OnlineData target_position(3);
 OnlineData target_velocity(3);
 
-OnlineData external_torques(2);
-
+OnlineData impact_force;
 
 n_XD = length(diffStates);
 n_U = length(controls);
@@ -49,14 +49,17 @@ h_impact_location = e^(-(r_impact*111-5.1))/(1+e^(-(r_impact*111-5.1)))+ (x_impa
 
 %% Impact Predictor
 
-%Activation Functions with Integral = 1
-% act_r = 1 / (1 + e^((r_impact-0.7)/0.02));
-% 
+%Activation Functions with Maximum = 1
+act_x = 1 / (1 + e^((x_impact-0.7)*50)) * (1 + e^((-x_impact-0.7)*50));
+act_y = 1 / (1 + e^((y_impact-0.7)*50)) * (1 + e^((-y_impact-0.7)*50));
+
 % v_diff = velocity - target_velocity;
 % vz_diff = v_diff' * z_B;
-% pred_z_force = 1 * vz_diff / (4.6 + 1) * act_d * act_r;
-% pred_x_torque = 1 * vz_diff * x_impact / 0.192 * act_ * act_r;
-% pred_y_torque = 1 * vz_diff * y_impact / 0.185 * act_d * act_r;
+% pred_z_force = 1 * vz_diff / (4.6 + 1) * impact_act_t * act_r;
+% pred_y_torque = -1 * vz_diff * x_impact / 0.192 * impact_act_t * act_x;
+% pred_x_torque = -1 * vz_diff * y_impact / 0.185 * impact_act_t * act_y;
+pred_y_torque = -x_impact * impact_force * act_x;
+pred_x_torque = y_impact * impact_force * act_y;
 
 %% Differential Equation
 
@@ -72,8 +75,8 @@ f = dot([velocity; roll; pitch; yaw; position; rollrate_ext; pitchrate_ext]) == 
     dpitch;...
     0;...
     velocity;...
-    external_torques1;...
-    external_torques2;...
+    -external_torques1 - pred_x_torque;...
+    external_torques2 + pred_y_torque;...
     ];
 
 h = [position;...
@@ -88,10 +91,7 @@ h = [position;...
 hN = [position;...
     velocity;...
     h_impact_location];
-    %velocity];
 
-    
-    
 %% MPCexport
 acadoSet('problemname', 'mav_position_mpc');
 

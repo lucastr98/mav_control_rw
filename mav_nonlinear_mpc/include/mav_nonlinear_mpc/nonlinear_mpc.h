@@ -36,6 +36,7 @@
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <geometry_msgs/PointStamped.h>
+#include <drogone_msgs/DijkstraViz.h>
 #include <drogone_action/FSMActionResult.h>
 #include <stdio.h>
 #include <mav_control_interface/mpc_queue.h>
@@ -131,6 +132,8 @@ class NonlinearModelPredictiveControl
   void targetPositionCallback(const geometry_msgs::PointStamped& intersection_point);
   void motionPlannerCallback(const drogone_action::FSMActionResult& result);
   void guiCallback(const drogone_action::FSMActionResult& result);
+  void catchTimeCallback(const drogone_msgs::DijkstraViz& msg);
+  Eigen::VectorXd getImpact();
 
   // get reference and predicted state
   bool getCurrentReference(mav_msgs::EigenTrajectoryPoint* reference) const;
@@ -157,6 +160,7 @@ class NonlinearModelPredictiveControl
   ros::Subscriber target_position_sub_;
   ros::Subscriber motionplanner_sub_;
   ros::Subscriber gui_sub_;
+  ros::Subscriber catch_time_sub_;
 
   // reset integrator service
   ros::ServiceServer reset_integrator_service_server_;
@@ -215,6 +219,7 @@ class NonlinearModelPredictiveControl
   //Target Position / velocity
   Eigen::Vector3d target_position_;
   Eigen::Vector3d target_velocity_;
+  double catch_time_;
 
   // reference queue
   MPCQueue mpc_queue_;

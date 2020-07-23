@@ -76,14 +76,15 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     OnlineData external_forces1; 
     OnlineData external_forces2; 
     OnlineData external_forces3; 
+    OnlineData external_torques1; 
+    OnlineData external_torques2; 
     OnlineData target_position1; 
     OnlineData target_position2; 
     OnlineData target_position3; 
     OnlineData target_velocity1; 
     OnlineData target_velocity2; 
     OnlineData target_velocity3; 
-    OnlineData external_torques1; 
-    OnlineData external_torques2; 
+    OnlineData impact_force; 
     BMatrix acadodata_M1;
     acadodata_M1.read( "mav_position_mpc_data_acadodata_M1.txt" );
     BMatrix acadodata_M2;
@@ -125,15 +126,15 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     acadodata_f3 << dot(position1) == velocity1;
     acadodata_f3 << dot(position2) == velocity2;
     acadodata_f3 << dot(position3) == velocity3;
-    acadodata_f3 << dot(rollrate_ext) == external_torques1;
-    acadodata_f3 << dot(pitchrate_ext) == external_torques2;
+    acadodata_f3 << dot(rollrate_ext) == (-((-cos(roll)*sin(yaw)+cos(yaw)*sin(pitch)*sin(roll))*(position1-target_position1)+(cos(roll)*cos(yaw)+sin(pitch)*sin(roll)*sin(yaw))*(position2-target_position2)+(position3-target_position3)*cos(pitch)*sin(roll))/(1.00000000000000000000e+00+pow(2.71799999999999997158e+00,((-cos(roll)*sin(yaw)+cos(yaw)*sin(pitch)*sin(roll))*(position1-target_position1)+(cos(roll)*cos(yaw)+sin(pitch)*sin(roll)*sin(yaw))*(position2-target_position2)+(position3-target_position3)*cos(pitch)*sin(roll)-6.99999999999999955591e-01)*5.00000000000000000000e+01))*(1.00000000000000000000e+00+pow(2.71799999999999997158e+00,(-(-cos(roll)*sin(yaw)+cos(yaw)*sin(pitch)*sin(roll))*(position1-target_position1)-(cos(roll)*cos(yaw)+sin(pitch)*sin(roll)*sin(yaw))*(position2-target_position2)-(position3-target_position3)*cos(pitch)*sin(roll)-6.99999999999999955591e-01)*5.00000000000000000000e+01))*impact_force-external_torques1);
+    acadodata_f3 << dot(pitchrate_ext) == ((-(-sin(pitch))*(position3-target_position3)-(position1-target_position1)*cos(pitch)*cos(yaw)-(position2-target_position2)*cos(pitch)*sin(yaw))/(1.00000000000000000000e+00+pow(2.71799999999999997158e+00,((-sin(pitch))*(position3-target_position3)+(position1-target_position1)*cos(pitch)*cos(yaw)+(position2-target_position2)*cos(pitch)*sin(yaw)-6.99999999999999955591e-01)*5.00000000000000000000e+01))*(1.00000000000000000000e+00+pow(2.71799999999999997158e+00,(-(-sin(pitch))*(position3-target_position3)-(position1-target_position1)*cos(pitch)*cos(yaw)-(position2-target_position2)*cos(pitch)*sin(yaw)-6.99999999999999955591e-01)*5.00000000000000000000e+01))*impact_force+external_torques2);
 
     ocp1.setModel( acadodata_f3 );
 
 
     ocp1.setNU( 3 );
     ocp1.setNP( 0 );
-    ocp1.setNOD( 17 );
+    ocp1.setNOD( 18 );
     OCPexport ExportModule1( ocp1 );
     ExportModule1.set( GENERATE_MATLAB_INTERFACE, 1 );
     uint options_flag;

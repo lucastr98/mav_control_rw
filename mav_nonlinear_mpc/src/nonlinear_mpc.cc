@@ -94,6 +94,7 @@ void NonlinearModelPredictiveControl::initializeSubscribers(ros::NodeHandle& nh)
   target_position_sub_ = nh.subscribe("/visualization/intersection_point", 10, &NonlinearModelPredictiveControl::targetPositionCallback, this);
   motionplanner_sub_ = nh.subscribe("Motionplanner/result", 10, &NonlinearModelPredictiveControl::motionPlannerCallback, this);
   gui_sub_ = nh.subscribe("GUI/result", 10, &NonlinearModelPredictiveControl::guiCallback, this);
+  catch_time_sub_ = nh.subscribe("/visualization/Dijkstra", 10, &NonlinearModelPredictiveControl::catchTimeCallback, this);
 }
 
 void NonlinearModelPredictiveControl::targetPositionCallback(const geometry_msgs::PointStamped& intersection_point){
@@ -122,6 +123,18 @@ void NonlinearModelPredictiveControl::guiCallback(const drogone_action::FSMActio
   }
   ss << catch_status_;
   ROS_WARN_STREAM(ss.str());
+}
+
+void NonlinearModelPredictiveControl::catchTimeCallback(const drogone_msgs::DijkstraViz& msg){
+  if(msg.header.seq > 0 && msg.selected_keys.size() == 2){
+    int key = msg.selected_keys[1];
+    double timeoffset = (key - 1.)/10;
+    double timenow = msg.header.stamp.toSec(); //secs + msg.header.stamp.secs / 1e9;
+    catch_time_ = timenow + timeoffset;
+    std::stringstream ss;
+    ss << "Catch time: " << catch_time_;
+    ROS_WARN_STREAM(ss.str());
+  }
 }
 
 void NonlinearModelPredictiveControl::initializeParameters()
@@ -225,6 +238,31 @@ void NonlinearModelPredictiveControl::applyNewOffsetWeight(){
       .transpose();
   Eigen::Map<Eigen::Matrix<double, ACADO_NYN, ACADO_NYN>>(const_cast<double*>(acadoVariables.WN)) =
       WN_.transpose();
+}
+
+Eigen::VectorXd NonlinearModelPredictiveControl::getImpact(){
+  Eigen::VectorXd impact_force(ACADO_N + 1);
+  impact_force.setZero();
+  if(catch_status_ == 1){
+    double diff = catch_time_ - ros::Time::now().toSec();
+    bool impact_sampled = false;
+    for(size_t i = 0; i < ACADO_N + 1; i++){
+      double t = i * prediction_sampling_time_;
+      if(t >= diff){
+        if(!impact_sampled){
+          impact_force[i] = 20 / 0.19;
+          impact_sampled = true;
+        }
+        else{
+          // impact_force[i] = 9.8 / 0.19/40;
+        }
+      }
+    }
+    std::stringstream ss;
+    ss << "Impact force: " << impact_force.transpose();
+    ROS_WARN_STREAM(ss.str());
+  }
+  return impact_force;
 }
 
 void NonlinearModelPredictiveControl::applyParameters()
@@ -408,11 +446,8 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   Eigen::Vector3d estimated_disturbances_B =
       odometry_.orientation_W_B.toRotationMatrix().transpose() * estimated_disturbances;
 
-  Eigen::Vector3d target_position = target_position_;
+  // Eigen::Vector3d target_position = target_position_;
 
-  // if (W_(11,11) == 0){
-  //   target_position = odometry_.position_W;
-  // }
   // if(W_(11,11) != 0 && W_(11,11) != w_impact_location_(0,0)){
   //   applyNewOffsetWeight();
   // }
@@ -427,14 +462,17 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
     reference_.block(i, 0, 1, ACADO_NY) << position_ref_[i].transpose(), velocity_ref_[i].transpose(), feed_forward
         .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2), 0;
     acado_online_data_.block(i, 6, 1, 3) << estimated_disturbances.transpose();
-    acado_online_data_.block(i, 9, 1, 3) << target_position.transpose();
-    acado_online_data_.block(i, 12, 1, 3) << target_velocity_.transpose();
+    // acado_online_data_.block(i, 9, 1, 2) << estimated_torques.transpose();
+    acado_online_data_.block(i, 11, 1, 3) << target_position_.transpose();
+    acado_online_data_.block(i, 14, 1, 3) << target_velocity_.transpose();
   }
-  //referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
   referenceN_.block(0,0, 1, ACADO_NYN) << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose(), 0;
   acado_online_data_.block(ACADO_N, 6, 1, 3) << estimated_disturbances.transpose();
-  acado_online_data_.block(ACADO_N, 9, 1, 3) << target_position.transpose();
-  acado_online_data_.block(ACADO_N, 12, 1, 3) << target_velocity_.transpose();
+  // acado_online_data_.block(ACADO_N, 9, 1, 2) << estimated_torques.transpose();
+  acado_online_data_.block(ACADO_N, 11, 1, 3) << target_position_.transpose();
+  acado_online_data_.block(ACADO_N, 14, 1, 3) << target_velocity_.transpose();
+
+  acado_online_data_.block(0, 17, ACADO_N + 1, 1) << getImpact();
 
   x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W, 0, 0;
 
@@ -454,9 +492,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
   // Eigen::Vector3d positionDifference = odometry_.position_W - target_position_;
   // // double r = pow(positionDifference[0],2) + pow(positionDifference[1],2);
-  std::stringstream ss;
-  ss << estimated_torques;
-  ROS_WARN_STREAM(ss.str());
+  // std::stringstream ss;
+  // ss << "\n" << acado_online_data_;
+  // ROS_WARN_STREAM(ss.str());
 
   solve_time_average_ += (ros::WallTime::now() - time_before_solving).toSec() * 1000.0;
 
@@ -464,12 +502,15 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   double pitch_ref = acadoVariables.u[1];
   double thrust_ref = acadoVariables.u[2];
 
-  float x_zero[11]= {odometry_.position_W[0], odometry_.position_W[1] , odometry_.position_W[2],
+  std::stringstream ss;
+  ss << "Roll: " << roll_ref << " Pitch: " << pitch_ref << " Thrust; " << thrust_ref;
+  ROS_WARN_STREAM(ss.str());
+  double x_zero[11]= {odometry_.position_W[0], odometry_.position_W[1] , odometry_.position_W[2],
             odometry_.getVelocityWorld()[0],  odometry_.getVelocityWorld()[1],  odometry_.getVelocityWorld()[2],
             current_rpy[0], current_rpy[1], roll_ref, pitch_ref, float(thrust_ref)- float(9.81)};
 
   geometry_msgs::PoseWithCovarianceStamped costs;
-  float x_delta;
+  double x_delta;
   for(int i=0; i<ACADO_NY-1; i++ ){
     x_delta =  x_zero[i] - reference_(0,i);
     costs.pose.covariance[i] = x_delta*x_delta*W_(i,i);
