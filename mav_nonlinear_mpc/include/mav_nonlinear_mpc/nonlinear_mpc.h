@@ -134,6 +134,7 @@ class NonlinearModelPredictiveControl
   void guiCallback(const drogone_action::FSMActionResult& result);
   void catchTimeCallback(const drogone_msgs::DijkstraViz& msg);
   Eigen::VectorXd getImpact();
+  Eigen::VectorXd getActW();
 
   // get reference and predicted state
   bool getCurrentReference(mav_msgs::EigenTrajectoryPoint* reference) const;

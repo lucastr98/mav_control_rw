@@ -242,6 +242,7 @@ void NonlinearModelPredictiveControl::applyNewOffsetWeight(){
 
 Eigen::VectorXd NonlinearModelPredictiveControl::getImpact(){
   Eigen::VectorXd impact_force(ACADO_N + 1);
+  double target_mass = 1.0;
   impact_force.setZero();
   if(catch_status_ == 1){
     double diff = catch_time_ - ros::Time::now().toSec();
@@ -250,7 +251,7 @@ Eigen::VectorXd NonlinearModelPredictiveControl::getImpact(){
       double t = i * prediction_sampling_time_;
       if(t >= diff){
         if(!impact_sampled){
-          impact_force[i] = 20 / 0.19;
+          impact_force[i] = mass_ * target_mass / (prediction_sampling_time_ * (mass_ + target_mass)) / 0.19;
           impact_sampled = true;
         }
         else{
@@ -258,11 +259,31 @@ Eigen::VectorXd NonlinearModelPredictiveControl::getImpact(){
         }
       }
     }
-    std::stringstream ss;
-    ss << "Impact force: " << impact_force.transpose();
-    ROS_WARN_STREAM(ss.str());
+    // std::stringstream ss;
+    // ss << "Impact force: " << impact_force.transpose();
+    // ROS_WARN_STREAM(ss.str());
   }
   return impact_force;
+}
+
+Eigen::VectorXd NonlinearModelPredictiveControl::getActW(){
+  Eigen::VectorXd act_w(ACADO_N + 1);
+  act_w.setZero();
+  if(catch_status_ == 1){
+    double diff = catch_time_ - ros::Time::now().toSec();
+    bool impact_sampled = false;
+    for(size_t i = 0; i < ACADO_N; i++){
+      double t = i * prediction_sampling_time_;
+      // if(t <= diff){
+        act_w[i] = 1; // act_w = 1-diff+t
+      // }
+    }
+    act_w[ACADO_N] = 1;
+    std::stringstream ss;
+    ss << "act_w: " << act_w.transpose();
+    ROS_WARN_STREAM(ss.str());
+  }
+  return act_w;
 }
 
 void NonlinearModelPredictiveControl::applyParameters()
@@ -452,6 +473,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   //   applyNewOffsetWeight();
   // }
 
+  target_velocity_ = odometry_.getVelocityWorld();
+  target_velocity_[2] = 0;
+
   for (size_t i = 0; i < ACADO_N; i++) {
     Eigen::Vector3d acceleration_ref_B = odometry_.orientation_W_B.toRotationMatrix().transpose()
         * acceleration_ref_[i];
@@ -473,6 +497,7 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   acado_online_data_.block(ACADO_N, 14, 1, 3) << target_velocity_.transpose();
 
   acado_online_data_.block(0, 17, ACADO_N + 1, 1) << getImpact();
+  acado_online_data_.block(0, 18, ACADO_N + 1, 1) << getActW();
 
   x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W, 0, 0;
 
@@ -502,9 +527,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   double pitch_ref = acadoVariables.u[1];
   double thrust_ref = acadoVariables.u[2];
 
-  std::stringstream ss;
-  ss << "Roll: " << roll_ref << " Pitch: " << pitch_ref << " Thrust; " << thrust_ref;
-  ROS_WARN_STREAM(ss.str());
+  // std::stringstream ss;
+  // ss << "Roll: " << roll_ref << " Pitch: " << pitch_ref << " Thrust; " << thrust_ref;
+  // ROS_WARN_STREAM(ss.str());
   double x_zero[11]= {odometry_.position_W[0], odometry_.position_W[1] , odometry_.position_W[2],
             odometry_.getVelocityWorld()[0],  odometry_.getVelocityWorld()[1],  odometry_.getVelocityWorld()[2],
             current_rpy[0], current_rpy[1], roll_ref, pitch_ref, float(thrust_ref)- float(9.81)};
